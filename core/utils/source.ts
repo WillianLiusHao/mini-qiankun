@@ -1,5 +1,5 @@
-import { App } from 'vue'
 import { Application } from '../types'
+import { originalWindow } from './originalEnv'
 
 export const isActive = (app: Application) => {
   return typeof app.activeRule === 'function' && app.activeRule()
@@ -47,7 +47,6 @@ export function loadSourceText(url: string) {
       xhr.onload = (res: any) => {
           resolve(res.target.response)
       }
-
       xhr.onerror = reject
       xhr.onabort = reject
       xhr.open('get', url)
@@ -58,6 +57,7 @@ export function loadSourceText(url: string) {
 export const parseCssAndScript = (node: Document, app: Application) => {
   let styles: any[] = []
   let scripts: any[] = []
+  app.loadedURLs = []
   const head = node.head
   const body = node.body
   const sources = [...Array.from(head.children), ...Array.from(body.children)]
@@ -75,7 +75,7 @@ export const parseCssAndScript = (node: Document, app: Application) => {
         value: source.textContent || ''
       }
       scripts.push(sourceConfig)
-      app.loadedURLs.push(sourceConfig)
+      app.loadedURLs.push(src)
 
     } else if (tagName === 'STYLE') {
       source.parentNode?.removeChild(source)
@@ -141,7 +141,7 @@ export function executeScripts(scripts: string[], app: Application) {
           (function(window) {${code}\n}).call(proxyWindow, proxyWindow)
         }
       })(this)`
-      new Function(codeWrap).call(app.sandbox.proxyWindow)
+      new Function(codeWrap).call(app.sandboxConfig.open ? app.sandbox.proxyWindow : originalWindow)
     })
   } catch (error) {
     throw error

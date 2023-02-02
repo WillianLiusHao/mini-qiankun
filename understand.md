@@ -2,7 +2,6 @@
 
 > 学习微前端，最小化实现一个微前端框架，尽可能完善 qiankun 现有功能
 
-[基于qiankun的微前端接入笔记](http://vuepress.wmm66.com/%E5%89%8D%E7%AB%AF%E5%BC%80%E5%8F%91/other/%E5%9F%BA%E4%BA%8Eqiankun%E7%9A%84%E5%BE%AE%E5%89%8D%E7%AB%AF%E6%8E%A5%E5%85%A5%E7%AC%94%E8%AE%B0.html)
 
 
 ### 1. 特点
@@ -69,29 +68,40 @@
 
 ### 4. 坑
 
-1. 主应用
-2. 子应用
-     - 暴露的声明周期钩子，主应用如何获取？
-         - 子应用将 生命周期函数挂载到 window 上（子应用代理对象），供主应用获取
-         - 子应用 `main.js` 导出函数，主应用通过 动态 import 的方式获取子应用中的生命周期函数
+1. 如何获取子应用声明周期钩子？
 
-3. 资源跨域
+    - 子应用将 生命周期函数挂载到 window 上（子应用代理对象），供主应用获取
 
-     - 配置 cors，防止出现跨域问题（由于主应用和子应用的域名不同，会出现跨域问题）
+    - 子应用 `main.js` 导出函数，主应用通过 动态 import 的方式获取子应用中的生命周期函数
 
-     - 配置资源发布路径`publicPath`,否则主应用在请求子应用相对路径的资源(如：/src/main.js)就会请求到主应用下的资源
+2. 资源跨域访问
+
+    - 配置 cors，防止出现跨域问题（由于主应用和子应用的域名不同，会出现跨域问题）
 
         ```js
-        module.exports = defineConfig({
-          devServer: {
-            port: 8081,
-            // 允许资源被主应用跨域请求
-            headers: {
-              'Access-Control-Allow-Origin': '*'
+          module.exports = defineConfig({
+            devServer: {
+              // ...
+              headers: {
+                // 允许资源被主应用跨域请求
+                'Access-Control-Allow-Origin': '*'
+              }
             }
-          },
-          publicPath:`//localhost:${port}`,
-        })
+          })
+        ```
+
+3. 资源加载
+
+    - 配置资源发布路径`publicPath`,否则主应用在请求子应用相对路径的资源(如：/src/main.js)就会请求到主应用下的资源
+
+        ```js
+          module.exports = defineConfig({
+            // ...
+            devServer: {
+              port: 8081,
+            },
+            publicPath:`//localhost:${port}`,
+          })
         ```
 
 
@@ -128,7 +138,39 @@
 
 ### 6. 沙箱
 
+##### js沙箱
+
+- 快照沙箱
+
+- 代理沙箱
+
+**一些重要的细节**
+
+1. 卸载时清除 沙箱 window 上的属性（防止子应用访问到上一次加载的属性）
+
+    - 实现：在代理对象的 set 函数中，将在代理对象设置的属性全部记录下来
+
+2. 除了属性，还需要卸载可能绑定在 window 上的一些事件/定时器（setTimeout/clearTimeout/addEventListener/removeEventListener）
+
+3. 缓存子应用快照，便于恢复
+
+    - 原因：因为除了初次加载子应用，会像传统的单个 vue 项目一样把所有的流程走一遍。后续重新加载子应用都是只执行子应用暴露的 mount 函数，导致各类 mount 外的js 文件无法再次执行
+
+    - 实现：在每次创建代理对象时，将代理的对象 生成快照，下次重新挂载的时候恢复这个快照即可
+
+
+##### 元素作用域隔离
+
+> 当子应用中使用 `document.querySelector` 时，依旧可以选择到主应用元素
+
+解决：改写所有的选择器，把选择范围缩小到 子应用的 container 内
+
+
+##### css沙箱
 
 
 ### 7. 通讯
+
+### 8. 数据共享
+
 

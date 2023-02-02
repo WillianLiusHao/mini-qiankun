@@ -1,4 +1,4 @@
-import { loadApps } from "../app/app"
+import { loadApps } from "../app"
 
 // 改写浏览器的前进后退等事件，主要是在每次路由变更时重新 加载应用
 const originalPushState = window.history.pushState
