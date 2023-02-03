@@ -10,9 +10,8 @@ export const unmountApp = async(app: Application) => {
   console.log(`%ctriggerHook:beforeUmount => ${app.status}`, 'color: blue')
 
   app.sandbox.inActive() // 沙箱失活
-  console.log(app.sandbox)
-  
   app.unmount && app.unmount(app)
+  
   triggerHook(app, 'unmounted', AppStatus.UNMOUNTED)
   console.log(`%ctriggerHook:unmounted => ${app.status}`, 'color: blue')
 

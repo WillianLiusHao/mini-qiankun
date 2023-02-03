@@ -56,3 +56,7 @@ export const getAppStatus = (status: number): Array<Application> => {
   })
   return res
 }
+
+export const getCurApp = () => {
+  return getAppStatus(AppStatus.BEFORE_BOOTSTRAP)
+}

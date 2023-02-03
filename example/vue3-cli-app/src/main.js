@@ -9,10 +9,8 @@ function render(props = {}) {
 }
 function bootstrap() {
 }
-console.log('vue3-cli-app => main.js => window.a:', window.a)
 
 function mount(props) {
-  console.log('vue3-cli-app => main.js(mount) => window.a:', window.a)
   render(props);
 }
 function unmount() {

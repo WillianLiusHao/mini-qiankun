@@ -14,10 +14,8 @@ function render(props = {}) {
 }
 function bootstrap() {
 }
-console.log('vue2-cli-app => mian.js => window.a:', window.a)
 
 function mount(props) {
-  console.log('vue2-cli-app => mian.js(mount) => window.a:', window.a)
   render(props);
 }
 function unmount() {

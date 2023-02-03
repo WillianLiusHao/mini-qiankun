@@ -8,10 +8,6 @@
 export default {
   name: 'App',
 }
-console.log('vue3-cli-app => app.vue => window.a:', window.a)
-window.a = 'vue3'
-console.log('vue3-cli-app => app.vue => window.a:', window.a)
-
 </script>
 
 <style>

@@ -1,6 +1,7 @@
 import { Application } from "../types"
 import { originalWindow } from "../utils/originalEnv"
-import { documentFnRewrite } from './documentFnRewrite'
+import { documentFnRewrite, documentFnReset } from './documentFnRewrite'
+
 
 export class proxySandbox {
   sandboxRunning: Boolean
@@ -19,7 +20,7 @@ export class proxySandbox {
           this.fackWindowKey.push(key)
           return true
         } else {
-          console.log('沙箱没有运行， 设置无效!!!')
+          console.error('沙箱没有运行， 设置无效!!!')
           return false
         }
       },
@@ -31,16 +32,20 @@ export class proxySandbox {
   }
   active() {
     this.sandboxRunning = true
-    // 元素作用域隔离
+    // 元素作用域隔离！！
+    // 当子应用中使用 document body 等顶层选择器时，默认会选择到主应用的，应当下降到子应用上
     documentFnRewrite()
   }
   inActive() {
     this.sandboxRunning = false
-    // 执行一些卸载操作
+    // 执行一些卸载操作！！
     // 1.卸载代理属性
     this.fackWindowKey.forEach(key => {
       delete this.proxyWindow[key]
     })
     // todo: 2. 卸载监听事件
+
+    // 3.元素隔离恢复
+    documentFnReset()
   }
 }

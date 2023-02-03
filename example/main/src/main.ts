@@ -12,13 +12,13 @@ registerApplication(
       container: '#container',
       activeRule: '/vue2-cli-app',
       beforeBootstrap: () => {
-        console.log('vue2-cli-app beforeBootstrap 生命周期，资源准备完毕')
+        console.log('vue2-cli-app 子应用中 提供的 beforeBootstrap 生命周期，资源准备完毕')
       },
       beforeMount: () => {
-        console.log('vue2-cli-app beforeMount 生命周期， 挂载前')
+        console.log('vue2-cli-app 子应用中 提供的 beforeMount 生命周期， 挂载前')
       },
       beforeUmount: () => {
-        console.log('vue2-cli-app beforeUmount 生命周期, 卸载前')
+        console.log('vue2-cli-app 子应用中 提供的 beforeUmount 生命周期, 卸载前')
       },
     },
     {

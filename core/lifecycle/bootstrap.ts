@@ -26,6 +26,7 @@ export const bootstrapApp = async (app: Application) => {
 
   console.log('2. 挂载 app.container:')
   // 2. 渲染 html, 赋值子应用容器内的 内容，app.container.innerHTML = app.pageBody
+  console.log(typeof app.container === 'string')
   if(typeof app.container === 'string') {
     const appContainer = document.querySelector(app.container) as HTMLElement
     appContainer.innerHTML = app.pageBody as string
@@ -43,10 +44,9 @@ export const bootstrapApp = async (app: Application) => {
 
   addStyles(app.styles as string[])
   executeScripts(app.scripts as string[], app)
-
-  app.sandbox.snapShot = deepClone(app.sandbox.proxyWindow)
+  // 首次加载完资源后，生成沙箱快照，后续重新加载该应用的时候可复原
+  app.sandbox.snapShot = deepClone(app.sandbox.proxyWindow) 
     
-
   triggerHook(app, 'bootstrapped', AppStatus.BOOTSTRAPED)
   console.log(`%ctriggerHook:bootstrapped => ${app.status}`, 'color: blue')
 

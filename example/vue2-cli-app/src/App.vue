@@ -1,7 +1,7 @@
 <template>
   <div id="app">
     <img alt="Vue logo" src="./assets/logo.png">
-    <h1>vue2-cli-app</h1>
+    <h1 id="vue2">vue2-cli-app</h1>
   </div>
 </template>
 
@@ -10,11 +10,8 @@
 export default {
   name: 'App',
 }
-console.log('vue2-cli-app => app.vue => window.a:', window.a)
 
-window.a = 'vue2'
-console.log('vue2-cli-app => app.vue => window.a:', window.a)
-
+console.log(document.querySelector('#app'))
 </script>
 
 <style>
