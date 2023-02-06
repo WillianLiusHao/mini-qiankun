@@ -1,7 +1,15 @@
+
 ## mini-qiankun
 
 > 学习微前端，最小化实现一个微前端框架，尽可能完善 qiankun 现有功能
 
+### 需求分析
+
+1. 支持不同框架子应用
+2. 支持子应用 HTML 入口
+3. JS 沙箱，确保微应用之间 全局变量/事件 不冲突
+4. 样式隔离
+5. 应用间数据通讯
 
 
 ### 1. 特点
@@ -18,19 +26,28 @@
 
 1. 主应用注册并启动子应用（**registerApplication** & **start**）
 
-    - `初始化子应用对象`：registerApplication
+    - `registerApplication`：初始化子应用对象，并加入到全局 appMaps 进行维护
+      ```js
+        app = {
+          ...app,
+          status, // 用于记录当前子应用所出的状态（9种）
+          pageBody, // 子应用body部分的html内容
+          sandboxConfig, // 沙箱相关配置
+          scripts: [],
+          styles: [],
+          isFirstLoad: true,
+          loadedURLs: []
+        }
+      ```
 
-    - `启动应用`：start
-      
-      - 结合用户参数，完善`框架配置`
-      - **预加载**
-      - **沙箱**
-      - **通讯**
-      - 监听页面变化，切换子应用
-        - 监听 popstate
-        - 监听 haschange
-        - 改写 pushState
-        - 改写 replaceState
+    - `start`：启动应用
+      - 结合用户配置完善应用配置
+      - 预加载配置
+      - 沙箱配置
+      - 单例模式(singular)
+
+    - `overwriteEventsAndHistory`：监听页面变化，切换子应用
+      - 改写浏览器的`popstate`, `hashChange`, `history.replaceState`, `history.pushState` 等方法，且每次变化都会执行 **loadApps** 方法
 
 2. 初次加载应用（**boostrapApp**）
 
@@ -42,6 +59,7 @@
     - `沙箱`
     - `执行 css 和 js`
     - `子应用将 封装好的 mount/unmount 等函数，挂到代理对象上，供主应用使用`
+
 
 3. 挂载应用（**mount**）
 
@@ -62,7 +80,67 @@
 
 ##### 快照沙箱（单应用）
 
+```js
+class SnapshotSandbox {
+  constructor() {
+    this.originSnapshot = {} // 记录每个子应用激活前 window 的快照
+    this.modifyPropsMap = {} // 记录子应用的修改了的属性
+  }
+  active() {
+    for(let prop in window) {
+      if(window.hasOwnProperty(prop)) {
+        this.originSnapshot[prop] = window[prop] // 逐个属性赋值，记录快照
+      }
+    }
+    Object.keys(this.modifyPropsMap).forEach(key => {
+      window[key] = this.modifyPropsMap[key]
+    })
+  }
+  inActive() {
+    for(let prop in window) {
+      if(window.hasOwnProperty(prop)) {
+        if(window[prop] !== this.originSnapshot[prop]) { // 说明子应用有些属性被修改了
+          this.modifyPropsMap[prop] = window[prop] // 恢复快照前记录变化的属性
+          window[prop] = this.originSnapshot[prop] // 恢复
+        }
+      }
+    }
+    window = this.originSnapshot
+  }
+}
+```
+
 ##### 代理沙箱（可多应用）
+
+```js
+class proxySandbox {
+  constructor() {
+    this.originWindow = {}
+    this.fackWindow = {}
+    const proxy = new Proxy(this.fackWindow, {
+      set: (target, key, value) => {
+        if(this.sandboxRunning) {
+          // 如果设置的键是代理对象自有的，在set前会经过get函数，所以此时的target 为代理对象
+          // 反之为 window
+          target[key] = value
+          return true
+        }
+      },
+      get: (target, key) => {
+        // 当代理对象有该属性时候，返回代理对象
+        return target.hasOwnProperty(key) ? target[key] : window[key]
+      }
+    })
+    this.proxy = proxy
+  }
+  active() {
+    this.sandboxRunning = true
+  }
+  inActive() {
+    this.sandboxRunning = false
+  }
+}
+```
 
 - 原理：利用 proxy 生成一个代理对象（`proxyWindow`），作为子应用的 window 对象。
 
@@ -70,6 +148,20 @@
   - 当子应用设置的属性在 window 上有时，设置改值到window上
   - 没有时，设置到代理对象上
   - **最后通过 with 语法，利用自执行函数，改变子应用的 window 为 proxyWindow**
+```js
+scripts.forEach(code => {
+  const codeWrap = `;(function (proxyWindow) { 
+    with(proxyWindow) {
+      (function(window) {${code}}).call(proxyWindow, proxyWindow)
+    }
+  })(this)`
+  new Function(codeWrap).call(app.sandbox.proxyWindow)
+})
+
+// (function(window) {${code}}).call(proxyWindow, proxyWindow)
+// 这样，子应用代码执行时，子应用中的 window 被 proxyWindow 所取代了
+```
+
 
 ##### 一些重要的细节
 
@@ -107,14 +199,7 @@
 
 ### 4. 通讯
 
-
-### 5. prefetch 预加载
-
-
-
-
-
-### 6. 疑难杂症
+### 5. 疑难杂症
 
 #### 1. 资源如何处理的？
 
