@@ -15,10 +15,6 @@ export const registerApplication = (apps: Array<Application>) => {
       scripts: [],
       styles: [],
       isFirstLoad: true,
-      sandboxConfig: {
-        open: true,
-        css: false,
-      },
       ...app,
       loadedURLs: [],
     }

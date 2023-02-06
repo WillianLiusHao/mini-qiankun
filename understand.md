@@ -18,13 +18,19 @@
 
 1. 主应用注册并启动子应用（**registerApplication** & **start**）
 
-    - 初始化子应用对象
+    - `初始化子应用对象`：registerApplication
 
-    - **监听页面变化，切换子应用**
-      - 监听 popstate
-      - 监听 haschange
-      - 改写 pushState
-      - 改写 replaceState
+    - `启动应用`：start
+      
+      - 结合用户参数，完善`框架配置`
+      - **预加载**
+      - **沙箱**
+      - **通讯**
+      - 监听页面变化，切换子应用
+        - 监听 popstate
+        - 监听 haschange
+        - 改写 pushState
+        - 改写 replaceState
 
 2. 初次加载应用（**boostrapApp**）
 
@@ -101,7 +107,11 @@
 
 ### 4. 通讯
 
-### 5. 数据共享
+
+### 5. prefetch 预加载
+
+
+
 
 
 ### 6. 疑难杂症

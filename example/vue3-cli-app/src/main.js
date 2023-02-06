@@ -9,9 +9,11 @@ function render(props = {}) {
 }
 function bootstrap() {
 }
+window.vue = 'vue3'
 
 function mount(props) {
   render(props);
+  console.log(window.vue )
 }
 function unmount() {
   instance.$el.innerHTML = '';

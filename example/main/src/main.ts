@@ -29,5 +29,5 @@ registerApplication(
     }
   ]
 )
-start()
+start({})
 createApp(App).mount('#app')

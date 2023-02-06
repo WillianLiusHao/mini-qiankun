@@ -1,4 +1,4 @@
-import { Application } from "../types"
+import { Application, FrameworkConfiguration } from "../types"
 import { isActive } from '../utils/source'
 import { bootstrapApp, unmountApp, mountApp } from '../lifecycle'
 

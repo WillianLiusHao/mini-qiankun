@@ -1,3 +1,10 @@
+
+export interface FrameworkConfiguration {
+  prefetch?: Boolean // 是否预加载子应用
+  sandboxConfig?: any // 沙箱配置
+  singular?: Boolean // 是否为单例模式
+}
+
 export type Application = {
   name: string,
   pageEntry: string,

@@ -1,5 +1,6 @@
 import { Application } from '../types'
 import { originalWindow } from './originalEnv'
+import { frameworkConfiguration } from '../app/start'
 
 export const isActive = (app: Application) => {
   return typeof app.activeRule === 'function' && app.activeRule()
@@ -141,7 +142,7 @@ export function executeScripts(scripts: string[], app: Application) {
           (function(window) {${code}\n}).call(proxyWindow, proxyWindow)
         }
       })(this)`
-      new Function(codeWrap).call(app.sandboxConfig.open ? app.sandbox.proxyWindow : originalWindow)
+      new Function(codeWrap).call(frameworkConfiguration.sandboxConfig.open ? app.sandbox?.proxyWindow : originalWindow)
     })
   } catch (error) {
     throw error

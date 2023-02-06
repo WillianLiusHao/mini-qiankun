@@ -14,8 +14,9 @@ function render(props = {}) {
 }
 function bootstrap() {
 }
-
+window.vue = 'vue2'
 function mount(props) {
+  console.log(window.vue)
   render(props);
 }
 function unmount() {
