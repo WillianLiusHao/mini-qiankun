@@ -14,6 +14,4 @@ export const unmountApp = async(app: Application) => {
   
   triggerHook(app, 'unmounted', AppStatus.UNMOUNTED)
   console.log(`%ctriggerHook:unmounted => ${app.status}`, 'color: blue')
-
-  console.log('%c↑↑↑↑↑↑↑↑↑↑↑↑ beforeUmountApp end ↑↑↑↑↑↑↑↑↑↑↑↑', 'color: red')
 }

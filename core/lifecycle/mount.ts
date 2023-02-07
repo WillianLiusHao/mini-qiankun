@@ -16,6 +16,4 @@ export const mountApp = async(app: Application) => {
   // 元素作用域隔离
 
   console.log(`%ctriggerHook:mounted => ${app.status}`, 'color: blue')
-
-  console.log('%c↑↑↑↑↑↑↑↑↑↑↑↑ mountApp end ↑↑↑↑↑↑↑↑↑↑↑↑', 'color: red')
 }

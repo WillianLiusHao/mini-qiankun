@@ -17,13 +17,15 @@ export const parseHTMLandLoadSources = async (app: Application) => {
       reject('parse html error')      
     }
     
-    // 2.DOMParser 解析 html，处理成树状 dom
+    // 2.DOMParser 解析 html，处理成 dom 对象（不用创建真实dom）
     const domparser = new DOMParser()
     const doc = domparser.parseFromString(html, 'text/html')
     // parseCssAndScript 解析 css 和 js 资源
     const { styles, scripts } = parseCssAndScript(doc, app)
     app.pageBody = doc.body.innerHTML
     // 加载 资源
+
+    console.log(scripts)
     let isStylesDone = false, isScriptsDone = false
     Promise.all(loadStyles(app, styles))
       .then((res: any) => {

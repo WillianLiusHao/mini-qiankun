@@ -21,13 +21,10 @@ export const bootstrapApp = async (app: Application) => {
   } catch (error) {
     app.status = AppStatus.BOOTSTRAP_ERROR
   }
-  console.log('1. parseHTMLandLoadSources处理后的资源', )
-  console.log('styles', app.styles)
-  console.log('scripts', app.scripts)
+  console.log('1. parseHTMLandLoadSources处理资源', )
 
   // 2. 渲染 html, 赋值子应用容器内的 内容，app.container.innerHTML = app.pageBody
   console.log('2. 挂载 app.container:')
-  console.log(typeof app.container === 'string')
   if(typeof app.container === 'string') {
     const appContainer = document.querySelector(app.container) as HTMLElement
     appContainer.innerHTML = app.pageBody as string
@@ -56,15 +53,14 @@ export const bootstrapApp = async (app: Application) => {
   // 4. 获取子应用生命周期函数，挂到app 对象上'
   console.log('4. 获取子应用生命周期函数，挂到app 对象上')
   // 每个子应用 main 中要把 bootstrap/mount/unmount 等声明周期函数封装好挂载到沙箱代理对象的__SINGLE_SPA__上，供基座使用)
-  const { mount, unmount } = await getLifeCycleFuncs(app)
+  const { mount, unmount } = await getMicroAppLifeFn(app)
   app.mount = mount
   app.unmount = unmount
   
-  console.log('%c↑↑↑↑↑↑↑↑↑↑↑↑ bootstrapApp end ↑↑↑↑↑↑↑↑↑↑↑↑', 'color: red')
 }
 
 
-async function getLifeCycleFuncs(app: Application) {
+async function getMicroAppLifeFn(app: Application) {
   let result = originalWindow.__SINGLE_SPA__
   if (frameworkConfiguration.sandboxConfig.open) {
     result = app.sandbox?.proxyWindow?.__SINGLE_SPA__
@@ -77,3 +73,6 @@ async function getLifeCycleFuncs(app: Application) {
   throw Error('The micro app must inject the lifecycle("bootstrap" "mount" "unmount") into window.__SINGLE_SPA__')
 }
 
+async function getMicroAppLifeFn2() {
+  
+}
