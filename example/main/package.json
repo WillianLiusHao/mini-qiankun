@@ -12,6 +12,7 @@
   "author": "刘志豪 <zhihaoliu@infinite.net.cn>",
   "license": "MIT",
   "dependencies": {
+    "qiankun": "^2.9.1",
     "vue": "^3.2.37"
   },
   "devDependencies": {

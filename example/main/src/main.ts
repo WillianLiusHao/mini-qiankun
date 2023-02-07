@@ -3,6 +3,7 @@ import './style.css'
 import App from './App.vue'
 
 import { registerApplication, start } from '../../../core/index'
+// import { registerMicroApps, start } from 'qiankun'
 
 registerApplication(
   [
