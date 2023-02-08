@@ -236,10 +236,15 @@ scripts.forEach(code => {
 
 
 
+## 5. 预加载
 
-## 5. 通讯
 
-## 6. 疑难杂症
+
+## 6. 通讯
+
+
+
+## 疑难杂症
 
 ### 1. 资源如何处理的？
 
@@ -331,44 +336,39 @@ scripts.forEach(code => {
 
 ### 5. 资源跨域访问
 
-  - 配置 cors，防止出现跨域问题（由于主应用和子应用的域名不同，会出现跨域问题）
-  
-    ```js
-      module.exports = defineConfig({
-        devServer: {
-          // ...
-          headers: {
-            // 允许资源被主应用跨域请求
-            'Access-Control-Allow-Origin': '*'
-          }
-        }
-      })
-    ```
+​	配置 cors，防止出现跨域问题（由于主应用和子应用的域名不同，会出现跨域问题）
+
+```js
+  module.exports = defineConfig({
+    devServer: {
+      // ...
+      headers: {
+        // 允许资源被主应用跨域请求
+        'Access-Control-Allow-Origin': '*'
+      }
+    }
+  })
+```
 
 ### 6. 资源加载
 
-  - 动态配置资源发布路径`publicPath`,否则主应用在请求子应用相对路径的资源(如：/src/main.js)就会请求到主应用下的资源
-    
-    ```js
-      if (window.__POWERED_BY_QIANKUN__) {
-        __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
-      }
-    ```
+​	动态配置资源发布路径`publicPath`,否则主应用在请求子应用相对路径的资源(如：/src/main.js)就会请求到主应用下的资源
+```js
+  if (window.__POWERED_BY_QIANKUN__) {
+    __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;
+  }
+```
 
 
 
+### 7. 是怎么对 single-spa 进行二开的？
 
-
-
-
-## single-spa
-
-核心功能：
+#### single 的2个核心功能
 
 - 加载微应用
 - 管理微应用的状态(初始化、挂载、卸载)
 
-### registerApplication 注册子应用
+#### registerApplication 注册子应用
 
 ```js
 /**
@@ -385,10 +385,14 @@ scripts.forEach(code => {
  */
 ```
 
-- single-spa 第二个参数app，可以理解形成回调函数，实则是子应用的一些生命周期，如 `mount、bootstrap、unmount`，注册时将这些传入，框架会在子应用激活的时候触发回调
+- single-spa 第二个参数app
+
+  可以理解形成回调函数，实则是子应用的一些生命周期，如 `mount、bootstrap、unmount`，注册时将这些传入，框架会在子应用激活的时候触发回调
 
 
-- single-spa 内部有状态管理机制，给每个子应用都设定了状态，状态转变可为 `加载 => 挂载 => 卸载 => 重挂载`；
+- single-spa 内部有状态管理机制
+
+  给每个子应用都设定了状态，状态转变可为 `加载 => 挂载 => 卸载 => 重挂载`；
 
 
 - single-spa 会通过路由的变化，决定各子应用的状态变化，进而决定子应用的生命周期
@@ -398,12 +402,12 @@ scripts.forEach(code => {
     + 改写浏览器的`popstate`, `hashChange`, `history.replaceState`, `history.pushState` 等方法，且每次变化都会执行 **loadApps** 方法
 
 
-## 知识点串联
+#### 知识点串联
 
-> qiankun 依赖了 `single-spa` 的 `{ registerApplication, start }` 方法
+- qiankun 依赖了 `single-spa` 的 `{ registerApplication, start }` 方法
 
-  - qiankun 在调用 single-spa 的 registerApplication 前，通过拓展 `app` 参数，实现自定义的加载方法
+  在调用 single-spa 的 registerApplication 前，通过拓展 `app` 参数，实现自定义的加载方法
 
-> qiankun 依赖了 `import-html-entry` 的 `{ importEntry }` 方法
+- qiankun 依赖了 `import-html-entry` 的 `{ importEntry }` 方法
 
-  - 通过 entry 解析子应用资源，获得 js/css 并在沙箱中执行
+  通过 entry 解析子应用资源，获得 js/css 并在沙箱中执行
