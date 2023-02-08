@@ -1,9 +1,8 @@
-import { Application } from '../types'
-import { originalWindow } from './originalEnv'
-import { frameworkConfiguration } from '../app/start'
+import { Application } from '../qiankun/types'
 
-export const isActive = (app: Application) => {
-  return typeof app.activeRule === 'function' && app.activeRule()
+const originalWindow: Window & any = window
+export const importEntry = (entry: string) => {
+
 }
 
 // 通过 app 入口文件解析 html 并 加载 css 和 js
@@ -12,7 +11,7 @@ export const parseHTMLandLoadSources = async (app: Application) => {
     // 1. 发请求，获取 html 内容
     let html = ''
     try {
-      html = await loadSourceText(app.pageEntry)
+      html = await loadSourceText(app.entry)
     } catch (error) {
       reject('parse html error')      
     }
@@ -20,21 +19,25 @@ export const parseHTMLandLoadSources = async (app: Application) => {
     // 2.DOMParser 解析 html，处理成 dom 对象（不用创建真实dom）
     const domparser = new DOMParser()
     const doc = domparser.parseFromString(html, 'text/html')
+
     // parseCssAndScript 解析 css 和 js 资源
     const { styles, scripts } = parseCssAndScript(doc, app)
-    app.pageBody = doc.body.innerHTML
-    // 加载 资源
+    app.pageBody = html
+    
+    // app.pageBody = doc.body.innerHTML
 
+
+    // 加载 资源
     console.log(scripts)
     let isStylesDone = false, isScriptsDone = false
-    Promise.all(loadStyles(app, styles))
+    Promise.all(getExternalStyleSheets(app, styles))
       .then((res: any) => {
         isStylesDone = true
         app.styles = res
         if(isStylesDone && isScriptsDone) { resolve() }
       })
       .catch((err: any) => reject(err))
-    Promise.all(loadScripts(app, scripts))
+    Promise.all(getExternalScript(app, scripts))
       .then((res: any) => {
         isScriptsDone = true
         app.scripts = res
@@ -57,7 +60,7 @@ export function loadSourceText(url: string) {
   })
 }
 
-export const parseCssAndScript = (node: Document, app: Application) => {
+const parseCssAndScript = (node: Document, app: Application) => {
   let styles: any[] = []
   let scripts: any[] = []
   app.loadedURLs = []
@@ -98,13 +101,10 @@ export const parseCssAndScript = (node: Document, app: Application) => {
 }
 
 // 加载外部 css
-export const loadStyles = (app: Application, styles: any) => {
-  if(!styles.length) return Promise.reject('loadStyles error')
+export const getExternalStyleSheets = (app: Application, styles: any) => {
+  if(!styles.length) return Promise.reject('getExternalStyleSheets error')
 
   return styles.map((item: any) => {
-    // if (item.url) return loadSourceText(app.pageEntry, item.url)
-    // else return Promise.resolve(item.value)
-
     if (!item.url) return Promise.resolve(item.value)
   }).filter(Boolean)
 }
@@ -124,28 +124,45 @@ export function addStyles(styles: string[] | HTMLStyleElement[]) {
   })
 }
 
-// 只处理外部js和内嵌script
-export const loadScripts = (app: Application, scripts: any) => {
-  if(!scripts.length) return Promise.reject('loadScripts error')
+// 处理外部js和内嵌script
+export const getExternalScript = (app: Application, scripts: any) => {
+  if(!scripts.length) return Promise.reject('getExternalScript error')
 
   return scripts.map((item: any) => {
     if (item.url) {
-      return loadSourceText(item.url)
+      return loadSourceText(`${item.url.includes('http') ? '' : app.entry}${item.url}`)
     } else if (item.value){
       return Promise.resolve(item.value)
     }
   }).filter(Boolean)
 }
+
+
 export function executeScripts(scripts: string[], app: Application) {
   try {
+
+    /**
+     * 基于umd 模式，构造 commonjs 环境，用于接收子应用暴露的生命周期钩子
+     */
+
+    const module = { exports: {} }
+    const exports = module.exports
+    if(app.sandbox?.proxyWindow) {
+      app.sandbox.proxyWindow.module = { exports: {} }
+      app.sandbox.proxyWindow.export = app.sandbox.proxyWindow.module.exports
+    }
+    
     scripts.forEach(code => {
-      const codeWrap = `;(function (proxyWindow) { 
+      const codeWrap = `;(function (proxyWindow) {
         with(proxyWindow) {
-          (function(window) {${code}\n}).call(proxyWindow, proxyWindow)
+          (function(window) {
+            ${code}\n
+          }).call(proxyWindow, proxyWindow)
         }
       })(this)`
-      new Function(codeWrap).call(frameworkConfiguration.sandboxConfig.open ? app.sandbox?.proxyWindow : originalWindow)
+      new Function(codeWrap).call(app.sandbox?.proxyWindow || originalWindow)
     })
+    console.log(window, app.sandbox?.proxyWindow, module.exports)
   } catch (error) {
     throw error
   }
@@ -155,8 +172,7 @@ export function executeScripts(scripts: string[], app: Application) {
 export function createElement(tag: string, attrs?: any) {
   const node = document.createElement(tag)
   attrs && Object.keys(attrs).forEach(key => {
-      node.setAttribute(key, attrs[key])
+    node.setAttribute(key, attrs[key])
   })
-
   return node
 }

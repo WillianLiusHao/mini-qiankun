@@ -7,11 +7,11 @@ export interface FrameworkConfiguration {
 
 export type Application = {
   name: string,
-  pageEntry: string,
+  entry: string,
   container: HTMLElement | String,
   activeRule: string | Function
   status?: number | string,
-  pageBody?: string,
+  pageBody?: string | HTMLElement,
   loadedURLs?: Array<string>,
   scripts?: Array<string>,
   styles?: Array<string>,
@@ -37,6 +37,7 @@ export type Application = {
    /**
     * app 生命周期钩子，挂载前触发
     */
+   bootstrapError?: () => void,
    beforeMount?: () => void
    /**
     * app 生命周期钩子，挂载后触发

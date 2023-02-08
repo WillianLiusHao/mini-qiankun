@@ -9,7 +9,7 @@ export const mountApp = async(app: Application) => {
   triggerHook(app, 'beforeMount', AppStatus.BEFORE_MOUNT)
   console.log(`%ctriggerHook:beforeMount => ${app.status}`, 'color: blue')
 
-  app.sandbox.proxyWindow = app.sandbox.snapShot
+  app.sandbox && (app.sandbox.proxyWindow = app.sandbox?.snapShot)
   
   app.mount && app.mount(app)
   triggerHook(app, 'mounted', AppStatus.MOUNTED)

@@ -1,7 +1,7 @@
 import { Application } from '../types'
-import { AppStatus, appMaps } from '../app'
+import { AppStatus, appMaps } from '.'
 
-export const registerApplication = (apps: Array<Application>) => {
+export const registerMicroApps = (apps: Array<Application>, lifeCycles?: any) => {
   apps.forEach((app: Application) => {
     // activeRule 统一转为 函数处理
     if(typeof app.activeRule === 'string') {
