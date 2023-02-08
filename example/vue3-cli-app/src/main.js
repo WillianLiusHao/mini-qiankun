@@ -24,9 +24,9 @@ if(!window.__POWERED_BY_QIANKUN__) {
 export async function bootstrap() {
   console.log('[vue3] vue3 app bootstraped');
 }
-console.log(window.a)
-window.a = 'vue3'
 export async function mount(props) {
+  console.log(window.a)
+  window.a = 'vue3'
   render(props);
 }
 export async function unmount() {

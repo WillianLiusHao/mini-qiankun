@@ -1,14 +1,5 @@
-
-export interface FrameworkConfiguration {
-  prefetch?: Boolean // 是否预加载子应用
-  sandbox?: any // 沙箱配置
-  singular?: Boolean // 是否为单例模式
-}
-
 export type Application = {
   name: string,
-  entry: string,
-  container: HTMLElement | String,
   activeRule: string | Function
   status?: number | string,
   pageBody?: string | HTMLElement,
@@ -17,7 +8,6 @@ export type Application = {
   styles?: Array<string>,
   isFirstLoad?: boolean,
   sandbox?: any
-  sandbox?: any,
   /**
      * app 加载方法
      */

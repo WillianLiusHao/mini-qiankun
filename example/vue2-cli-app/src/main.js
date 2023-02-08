@@ -29,9 +29,9 @@ if(!window.__POWERED_BY_QIANKUN__) {
 export async function bootstrap() {
   console.log('[vue2] vue2 app bootstraped');
 }
-console.log(window.a)
-window.a = 'vue2'
 export async function mount(props) {
+  console.log(window.a)
+  window.a = 'vue2'
   render(props);
 }
 export async function unmount() {

@@ -1,5 +1,5 @@
-import { Application } from "../types"
-import { bootstrapApp, unmountApp, mountApp } from '../lifecycle'
+import { Application } from "./types"
+import { bootstrapApp, unmountApp, mountApp } from './lifecycle'
 
 // 资源 后，子应用状态变为 bootstrap，下一个状态为 mount
 // mount -> unmount

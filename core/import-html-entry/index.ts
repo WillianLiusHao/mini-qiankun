@@ -1,6 +1,7 @@
 import { Application } from '../qiankun/types'
 
 const originalWindow: Window & any = window
+
 export const importEntry = (entry: string) => {
 
 }
@@ -140,18 +141,16 @@ export const getExternalScript = (app: Application, scripts: any) => {
 
 export function executeScripts(scripts: string[], app: Application) {
   try {
-
     /**
      * 基于umd 模式，构造 commonjs 环境，用于接收子应用暴露的生命周期钩子
      */
-
     const module = { exports: {} }
     const exports = module.exports
     if(app.sandbox?.proxyWindow) {
       app.sandbox.proxyWindow.module = { exports: {} }
-      app.sandbox.proxyWindow.export = app.sandbox.proxyWindow.module.exports
+      app.sandbox.proxyWindow.exports = app.sandbox.proxyWindow.module.exports
     }
-    
+    // 沙箱执行代码
     scripts.forEach(code => {
       const codeWrap = `;(function (proxyWindow) {
         with(proxyWindow) {
@@ -162,7 +161,6 @@ export function executeScripts(scripts: string[], app: Application) {
       })(this)`
       new Function(codeWrap).call(app.sandbox?.proxyWindow || originalWindow)
     })
-    console.log(window, app.sandbox?.proxyWindow, module.exports)
   } catch (error) {
     throw error
   }
