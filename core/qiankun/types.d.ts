@@ -10,13 +10,10 @@ export type Application = {
   entry: string,
   container: HTMLElement | String,
   activeRule: string | Function
-  status?: number | string,
   pageBody?: string | HTMLElement,
   loadedURLs?: Array<string>,
   scripts?: Array<string>,
   styles?: Array<string>,
-  isFirstLoad?: boolean,
-  sandbox?: any
   sandbox?: any,
   /**
      * app 加载方法

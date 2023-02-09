@@ -2,7 +2,6 @@ import { AppStatus } from "../app"
 import { Application } from "../types"
 import { proxySandbox } from '../sandbox/proxySandbox'
 import { parseHTMLandLoadSources, addStyles, executeScripts } from '../../import-html-entry'
-import { triggerHook } from '../utils/application'
 import { originalWindow } from '../utils/originalEnv'
 import { deepClone } from '../utils/deepClone'
 import { frameworkConfiguration } from '../app/start'
@@ -25,11 +24,6 @@ import { frameworkConfiguration } from '../app/start'
 
 export const bootstrapApp = async (app: Application) => {
   console.log('%c↓↓↓↓↓↓↓↓↓↓ bootstrapApp start ↓↓↓↓↓↓↓↓↓↓', 'color: red')
-
-  triggerHook(app, 'beforeBootstrap', AppStatus.BEFORE_BOOTSTRAP)
-  console.log(`%ctriggerHook:beforeBootstrap => ${app.status}`, 'color: blue')
-
-  
   /**
    * 获取微应用的入口 html 内容和脚本执行器
    * template 是 link 替换为 style 后的 template
@@ -44,7 +38,7 @@ export const bootstrapApp = async (app: Application) => {
   try {
     await parseHTMLandLoadSources(app)
   } catch (error) {
-    triggerHook(app, 'bootstrapError', AppStatus.BOOTSTRAP_ERROR)
+    throw new Error('parse html entry error')
   }
 
   // --------------- 2.样式隔离 ------------------
@@ -76,9 +70,6 @@ export const bootstrapApp = async (app: Application) => {
     app.sandbox.snapShot = deepClone(app.sandbox?.proxyWindow) 
   }
     
-  triggerHook(app, 'bootstrapped', AppStatus.BOOTSTRAPED)
-  console.log(`%ctriggerHook:bootstrapped => ${app.status}`, 'color: blue')
-
   // --------------- 5.合并处理生命周期 ----------------
   const { mount, unmount } = await getMicroAppLifeFn(app)
   app.mount = mount

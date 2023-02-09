@@ -2,6 +2,7 @@ import { appMaps, loadApps } from '../app'
 import { FrameworkConfiguration } from '../types'
 import { originalProxy } from '../utils/originalEnv'
 import { doPrefetchStrategy } from '../prefetch'
+import { start as startSingleSpa } from '../../single-spa'
 
 declare const window: any
 
@@ -39,8 +40,8 @@ export const start = async (opts: FrameworkConfiguration = {}) => {
   }
 
   // 5. 调用single-spa 的启动方法启动
-  // startSingleSpa({ urlRerouteOnly });
-  await loadApps()
+  startSingleSpa();
+  // await loadApps()
 
   started = true;
   // frameworkStartedDefer.resolve();
