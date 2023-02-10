@@ -2,7 +2,7 @@ import { Application } from '../types'
 import { registerApplication } from '../../single-spa'
 
 import { bootstrapApp, unmountApp, mountApp } from '../lifecycle'
-
+import { loadApp } from '../loader'
 
 export const appMaps = new Map()
 
@@ -23,14 +23,16 @@ export const registerMicroApps = (apps: Array<Application>, lifeCycles?: any) =>
       loadedURLs: [],
     }
     appMaps.set(app.name, app)
-    console.log(`----------注册应用${app.name}`)
     registerApplication({
       name: app.name,
       app: async () => {
+        await loadApp(app)
         return {
-          bootstrap: app => bootstrapApp,
-          mount: app => mountApp,
-          unmount: app => unmountApp
+          bootstrap: (opts: any) => { console.log('bootstarp', opts) },
+          // mount: mergeMountFn,
+          // unmount: mergeUnmountFn
+          mount: (opts: any) => mountApp(app, opts),
+          unmount: (opts: any) => unmountApp(app, opts)
         }
       },
       activeWhen: app.activeRule

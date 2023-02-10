@@ -4,11 +4,13 @@ import { documentFnRewrite, documentFnReset } from './documentFnRewrite'
 
 
 export class proxySandbox {
+  app: Application
   sandboxRunning: Boolean
   fackWindowKey: (symbol | string)[]
   proxyWindow: any
   snapShot: any
   constructor(app: Application) {
+    this.app = app
     this.sandboxRunning = false
     this.fackWindowKey = []
     this.proxyWindow = new Proxy({}, {
@@ -34,7 +36,7 @@ export class proxySandbox {
     this.sandboxRunning = true
     // 元素作用域隔离！！
     // 当子应用中使用 document body 等顶层选择器时，默认会选择到主应用的，应当下降到子应用上
-    documentFnRewrite()
+    documentFnRewrite(this.app)
   }
   inActive() {
     this.sandboxRunning = false
@@ -47,5 +49,13 @@ export class proxySandbox {
 
     // 3.元素隔离恢复
     documentFnReset()
+  }
+}
+
+// 开启了沙箱且挂载过的应用，重启沙箱，恢复快照
+export const sandboxRestart = (app: Application) => {
+  if(app.sandbox) {
+    app.sandbox.active()
+    app.sandbox.proxyWindow = app.sandbox?.snapShot
   }
 }

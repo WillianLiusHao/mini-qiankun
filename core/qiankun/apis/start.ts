@@ -1,4 +1,4 @@
-import { appMaps, loadApps } from '../app'
+import { appMaps } from './registerMicroApps'
 import { FrameworkConfiguration } from '../types'
 import { originalProxy } from '../utils/originalEnv'
 import { doPrefetchStrategy } from '../prefetch'

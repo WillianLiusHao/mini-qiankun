@@ -13,8 +13,8 @@
 > single-spa 的缺陷
 
 - `js entry`：子项目需要打包成一个 JS 文件发布到静态资源服务器，主应用去请求加载
-- `样式隔离`
-- `js隔离`
+- `样式隔离`：样式错乱
+- `js隔离`：不同应用间，主应用和子应用间容易造成事件冲突
 - `资源预加载`
 - `数据通讯`
 
@@ -22,33 +22,45 @@
 
 ## 2. 整体流程
 
-![](https://images.vrm.cn/ox/2023/02/08/liucheng.png)
-
-
-
 1. `registerMicroApps`：注册子应用
 
     - 创建全局的子应用数据
     - 初始化每个子应用对象
-    - 调用 `single-spa` 的 `registerApplication` 方法注册子应用
+    - 调用 `single-spa` 的 `registerApplication` 方法注册子应用，`同时传入拓展功能用的自定义应用加载参数 app`
 
 2. `start`：启动子应用
 
-    - 设置全局变量 `__POWERED_BY_QIANKUN__`
-
     - 结合用户配置完善应用配置
-      - 预加载配置
-      - 沙箱配置
-      - 单例模式
+    - 预加载配置
+    - 沙箱配置 & 单例模式
     - 调用 `single-spa` 的 `startSingleSpa` 方法启动应用
 
-3. `single-spa` 开始激活子应用，触发相应的生命周期函数
+
+![](https://images.vrm.cn/ox/2023/02/08/liucheng.png)
 
 
 
 > **loadApps：qiankun核心函数**
 
-  - 1、通过 HTML Entry 的方式远程加载微应用，得到微应用的 html 模版（首屏内容）、JS 脚本执行器、静态经资源路径
+
+loadApps 函数是 qiankun 用来对 `single-spa` 二开，拓展功能的主要方法
+
+原理是 `single-spa` 会在每个子应用加载的时候执行这个方法，然后再执行`bootstrap`、`mount`、`unmout` 等声明周期函数
+
+  - 1、通过 HTML Entry 的方式，借助**import-html-entry** 远程加载微应用，得到微应用的 html 模版（首屏内容）、JS 脚本执行器、静态经资源路径
+    - **import-html-entry** 
+      - 对子应用入口发请求获取html
+      - 解析 html，生成 `template, scripts, entry, styles` 等数据
+        ```js
+          /* {
+            template: 经过处理的脚本，link、script 标签都被注释掉了,
+            scripts: [脚本的http地址 或者 { async: true, src: xx } 或者 代码块],
+            styles: [样式的http地址],
+            entry: 入口脚本的地址，要不是标有 entry 的 script 的 src，要不就是最后一个 script 标签的 src
+          }*/
+        ```
+      - 构建静态资源列表：把 js 和 css 外部资源远程加载 转为内联 `assetPublicPath`
+      - 导出 js 脚本执行器： `execScripts`
 
   - 2、样式隔离，shadow DOM 或者 scoped css 两种方式
 
@@ -56,48 +68,23 @@
 
   - 4、运行时沙箱，JS 沙箱、样式沙箱
 
-  - 5、合并沙箱传递出来的 生命周期方法、用户传递的生命周期方法、框架内置的生命周期方法，
-  
-      将这些生命周期方法统一整理，导出一个生命周期对象，供 single-spa 的 registerApplication 方法使用，这个对象就相当于使用 single-spa 时你的微应用导出的那些生命周期方法，只不过 qiankun额外填了一些生命周期方法，做了一些事情
-      
+  - 5、**合并沙箱传递出来的 生命周期方法、用户传递的生命周期方法、框架内置的生命周期方法，将这些生命周期方法统一整理，导出一个生命周期对象，供 single-spa 的 registerApplication 方法使用，这个对象就相当于使用 single-spa 时你的微应用导出的那些生命周期方法，只不过 qiankun额外填了一些生命周期方法，做了一些事情**
+    
   - 6、给微应用注册通信方法并返回通信方法，然后会将通信方法通过 props 注入到微应用
 
 
 
-> 每个生命周期填充的内容
+> 生命周期
 
-  1. 初次加载应用（**boostrap**）
+1. 初始化和挂载应用（**bootstrapAndMountApp**）
 
-      - 1. `解析和加载资源`： **import-html-entry** 
+    - `快照恢复`：恢复沙箱中的快照
+    - `挂载`：app.mout()
 
-        - 对子应用入口发请求获取html
-        - 解析 html，生成 `template, scripts, entry, styles` 等数据
-          ```js
-            /* {
-              template: 经过处理的脚本，link、script 标签都被注释掉了,
-              scripts: [脚本的http地址 或者 { async: true, src: xx } 或者 代码块],
-              styles: [样式的http地址],
-              entry: 入口脚本的地址，要不是标有 entry 的 script 的 src，要不就是最后一个 script 标签的 src
-            }*/
-          ```
-        - 构建静态资源列表：把 js 和 css 外部资源远程加载 转为内联 `assetPublicPath`
-        - 导出 js 脚本执行器： `execScripts`
+2. 卸载应用（**unmount**）
 
-      - 2. `挂载根节点`：将子应用挂载到主应用相应位置 上
-      - 3. `沙箱`
-      - 4. `执行 css 和 js`
-      - 5. `子应用将 封装好的 mount/unmount 等函数，挂到代理对象上，供主应用使用`
-
-
-  2. 挂载应用（**mount**）
-
-      - `快照恢复`：恢复沙箱中的快照
-      - `挂载`：app.mout()
-
-  3. 卸载应用（**unmount**）
-
-      - `沙箱失活`：卸载沙箱代理的window对象 / 卸载window上的事件(监听、计时器等) / 恢复元素选择器API
-      - `卸载`：app,unmount()
+    - `沙箱失活`：卸载沙箱代理的window对象 / 卸载window上的事件(监听、计时器等) / 恢复元素选择器API
+    - `卸载`：app,unmount()
 
 
 
@@ -182,12 +169,13 @@ class proxySandbox {
 }
 ```
 
-- 原理：利用 proxy 生成一个代理对象（`proxyWindow`），作为子应用的 window 对象。
 
-- 实现:
-  - 当子应用设置的属性在 window 上有时，设置改值到window上
-  - 没有时，设置到代理对象上
-  - **最后通过 with 语法，利用自执行函数，改变子应用的 window 为 proxyWindow**
+- 原理
+
+  + 利用 proxy 生成一个代理对象（`proxyWindow`），作为子应用的 window 对象。
+
+  + **最后通过 with 或者 eval 语法，利用自执行函数，让 js 代码在 proxyWindow 环境下执行**
+
 ```js
 scripts.forEach(code => {
   const codeWrap = `;(function (proxyWindow) { 
@@ -195,7 +183,7 @@ scripts.forEach(code => {
       (function(window) {${code}}).call(proxyWindow, proxyWindow)
     }
   })(this)`
-  new Function(codeWrap).call(app.sandbox.proxyWindow)
+  new Function(codeWrap).call(app.sandbox?.proxyWindow || originalWindow)
 })
 
 // (function(window) {${code}}).call(proxyWindow, proxyWindow)
@@ -203,21 +191,24 @@ scripts.forEach(code => {
 ```
 
 
-#### 一些重要的细节
+#### 沙箱的一些重要细节
 
-1. 卸载时清除 沙箱 window 上的属性（防止子应用访问到上一次加载的属性）
+> 除了修改子应用的上下文为代理对象，还有一些特殊的东西 ~
 
-    实现：在代理对象的 set 函数中，将在代理对象设置的属性全部记录下来
+**1. 清除沙箱中的属性**
 
+  防止下次加载时读取到上次的属性
 
-2. 除了属性，还需要卸载可能绑定在 window 上的一些事件/定时器（setTimeout/clearTimeout/addEventListener/removeEventListener）
+**2. 卸载事件**
 
+  代理对象，只能保证对象的属性能监听，我们还需要卸载可能绑定在 window 上的一些事件/定时器（setTimeout/clearTimeout/addEventListener/removeEventListener）
 
-3. **缓存子应用快照，便于恢复**
+**3. 启动时缓存快照，重加载时恢复快照**
 
-    - 原因：除了初次加载子应用，会像传统的单个 vue 项目一样把所有的流程走一遍。后续重新加载子应用都是只执行子应用暴露的 mount 函数，导致各类 mount 外的js 代码无法再次执行
+  - 原因：除了初次加载子应用，会像传统的单个 vue 项目一样把所有的流程走一遍。后续重新加载子应用都是只执行子应用暴露的 mount 函数，
+    导致一些在 mount 函数外的 js 代码无法再次执行
 
-    - 实现：在每次创建代理对象时，将代理的对象 生成快照，下次重新挂载的时候恢复这个快照即可
+  - 实现：在每次创建代理对象时，将代理的对象 生成快照，下次重新挂载的时候恢复这个快照即可
 
 
 ### 2.元素作用域隔离
@@ -280,28 +271,13 @@ scripts.forEach(code => {
 > qiankun 官方现在还暂未支持 所以要引入第三方库 `vite-plugin-qiankun`
 
 
-### 3. 子应用切换的生命周期管理/变化
+### 3. single-spa 应用生命周期管理/变化
 
-> 假设某次流程为：加载A应用 -> 切换到C -> 切换到B -> 切换到A
+类比Vue中组件的生命周期变化，不过是开启了缓存功能的组件
 
-请写出该流程的生命周期变化
-
-> 1. 加载A：A依次经过 beforeBootStrap -> bootStraped -> beforeMount -> mounted
-
-  - 其中在 bootstrap 生命周期会做如下事情
-    - 解析子应用入口html，构建资源列表
-    - 挂载子应用 根节点到 主应用
-    - 沙箱代理
-    - 执行 css 和 js
-    - 获取子应用挂载到代理对象上的 mount 和 unmount 函数，以便后续执行
-
-> 2. 切换到C：A应用卸载（变成unmounted） -> C应用走一遍`流程1`
-
-> 3. 切换到B：C应用卸载（变成unmounted） -> B应用走一遍`流程1`
-
-此时各子应用的的状态为（A：unmounted，C：unmounted，B：mounted）
-
-> 4. 切换到A：B应用卸载（变成unmounted）-> `A应用加载过资源了,只进行 mount 流程`
+知识点拓展：
+  - vue生命周期
+  - keep-alive 组件
 
 
 ### 4. 如何获取子应用声明周期钩子？
@@ -366,9 +342,9 @@ scripts.forEach(code => {
 #### single 的2个核心功能
 
 - 加载微应用
-- 管理微应用的状态(初始化、挂载、卸载)
+- 状态管理
 
-#### registerApplication 注册子应用
+> 加载微应用
 
 ```js
 /**
@@ -390,6 +366,9 @@ scripts.forEach(code => {
   可以理解形成回调函数，实则是子应用的一些生命周期，如 `mount、bootstrap、unmount`，注册时将这些传入，框架会在子应用激活的时候触发回调
 
 
+> 状态管理机制
+
+
 - single-spa 内部有状态管理机制
 
   给每个子应用都设定了状态，状态转变可为 `加载 => 挂载 => 卸载 => 重挂载`；
@@ -399,15 +378,4 @@ scripts.forEach(code => {
 
     + `overwriteEventsAndHistory`：监听页面变化，切换子应用并修改状态
 
-    + 改写浏览器的`popstate`, `hashChange`, `history.replaceState`, `history.pushState` 等方法，且每次变化都会执行 **loadApps** 方法
-
-
-#### 知识点串联
-
-- qiankun 依赖了 `single-spa` 的 `{ registerApplication, start }` 方法
-
-  在调用 single-spa 的 registerApplication 前，通过拓展 `app` 参数，实现自定义的加载方法
-
-- qiankun 依赖了 `import-html-entry` 的 `{ importEntry }` 方法
-
-  通过 entry 解析子应用资源，获得 js/css 并在沙箱中执行
+    + 改写浏览器的`popstate`, `hashChange`, `history.replaceState`, `history.pushState` 等方法，且每次变化都会执行 **reRoute** 方法

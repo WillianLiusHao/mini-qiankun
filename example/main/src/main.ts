@@ -21,5 +21,25 @@ registerMicroApps(
     }
   ]
 )
-start({})
+
+// registerApplication(
+//   {
+//     name: 'vue2App',
+//     app: async () => {
+//       return {
+//         bootstrap: async () => {
+//           console.log('single-spa bootstrap')
+//         },
+//         mount: async () => {
+//           console.log('single-spa mount')
+//         },
+//         unmount: async () => {
+//           console.log('single-spa unmount')
+//         }
+//       }
+//     },
+//     activeWhen: () => location.pathname.indexOf('/vue2-cli-app') === 0,
+//   },
+// )
+start()
 createApp(App).mount('#app')

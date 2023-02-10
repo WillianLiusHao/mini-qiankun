@@ -1,10 +1,9 @@
-import { AppStatus } from "../app"
 import { Application } from "../types"
 import { proxySandbox } from '../sandbox/proxySandbox'
 import { parseHTMLandLoadSources, addStyles, executeScripts } from '../../import-html-entry'
 import { originalWindow } from '../utils/originalEnv'
 import { deepClone } from '../utils/deepClone'
-import { frameworkConfiguration } from '../app/start'
+import { frameworkConfiguration } from '../apis'
 
 
 /**
@@ -22,8 +21,10 @@ import { frameworkConfiguration } from '../app/start'
  * @param lifeCycles 注册微应用时提供的全局生命周期对象
 */
 
-export const bootstrapApp = async (app: Application) => {
-  console.log('%c↓↓↓↓↓↓↓↓↓↓ bootstrapApp start ↓↓↓↓↓↓↓↓↓↓', 'color: red')
+export const bootstrapApp = async (app: Application, opts: any) => {
+  console.log(`%c↓↓↓↓↓↓↓↓↓↓ ${app.name} bootstrapApp start ↓↓↓↓↓↓↓↓↓↓`, 'color: red')
+  console.log(`bootstrapApp 接受用户主应用自定义参数${opts}`)
+
   /**
    * 获取微应用的入口 html 内容和脚本执行器
    * template 是 link 替换为 style 后的 template
