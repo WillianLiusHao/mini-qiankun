@@ -31,8 +31,8 @@
 2. `start`：启动子应用
 
     - 结合用户配置完善应用配置
-    - 预加载配置
-    - 沙箱配置 & 单例模式
+    - **预加载** 事件处理
+    - **沙箱** 配置 & 单例模式
     - 调用 `single-spa` 的 `startSingleSpa` 方法启动应用
 
 
@@ -48,27 +48,92 @@ loadApps 函数是 qiankun 用来对 `single-spa` 二开，拓展功能的主要
 原理是 `single-spa` 会在每个子应用加载的时候执行这个方法，然后再执行`bootstrap`、`mount`、`unmout` 等声明周期函数
 
   - 1、通过 HTML Entry 的方式，借助**import-html-entry** 远程加载微应用，得到微应用的 html 模版（首屏内容）、JS 脚本执行器、静态经资源路径
+  
     - **import-html-entry** 
       - 对子应用入口发请求获取html
       - 解析 html，生成 `template, scripts, entry, styles` 等数据
         ```js
           /* {
-            template: 经过处理的脚本，link、script 标签都被注释掉了,
+            template: 经过处理的模板，注释掉所有外部链接的 css 和 js （link 和 script 标签）
             scripts: [脚本的http地址 或者 { async: true, src: xx } 或者 代码块],
-            styles: [样式的http地址],
+            styles: [ link样式的http地址 ],
             entry: 入口脚本的地址，要不是标有 entry 的 script 的 src，要不就是最后一个 script 标签的 src
           }*/
         ```
       - 构建静态资源列表：把 js 和 css 外部资源远程加载 转为内联 `assetPublicPath`
       - 导出 js 脚本执行器： `execScripts`
 
-  - 2、样式隔离，shadow DOM 或者 scoped css 两种方式
+  - 2、样式隔离
+
+      - 给模板增加包裹容器
+
+      - **执行 shadow DOM 或 scoped css 方式 的样式隔离**
+      
+      - styles 集合内的所有外链 css 资源处理成行内 style 并插入到 dom 中 
 
   - 3、渲染微应用
 
-  - 4、运行时沙箱，JS 沙箱、样式沙箱
+      - 把上述处理好的 `template` 插入到 `container` 中
 
-  - 5、**合并沙箱传递出来的 生命周期方法、用户传递的生命周期方法、框架内置的生命周期方法，将这些生命周期方法统一整理，导出一个生命周期对象，供 single-spa 的 registerApplication 方法使用，这个对象就相当于使用 single-spa 时你的微应用导出的那些生命周期方法，只不过 qiankun额外填了一些生命周期方法，做了一些事情**
+      ![](https://willianliushao.github.io/study-record/assets/img/container.png)
+
+  - 4、运行时沙箱，JS 沙箱
+
+  - 5、**合并`沙箱传递出来的 生命周期方法`、`用户传递的生命周期方法`、`框架内置的生命周期方法`，将这些生命周期方法统一整理，导出一个生命周期对象，供 single-spa 的 registerApplication 方法使用，这个对象就相当于使用 single-spa 时你的微应用导出的那些生命周期方法，只不过 qiankun额外填了一些生命周期方法，做了一些事情**
+
+      - 合并全局生命周期，返回 `beforeUnmount, afterUnmount, afterMount, beforeMount, beforeLoad`
+        - getAddOns：在`加载前，挂载前，卸载前` 三个生命周期嵌入处理 qinakun 全局参数的方法
+          - `getEngineFlagAddOn`：处理 `__POWERED_BY_QIANKUN__` 的三个生命周期函数
+          - `getRuntimePublicPathAddOn`：处理 `__INJECTED_PBULIC_PATH_BY_QIANKUN__` 的三个生命周期函数
+        - lifeCycles：用户调用 registerMicroApps 方法时传给框架的生命周期函数，会应用到每一个子应用中
+
+      - 链式(execHooksChain)执行 beforeLoad
+
+      - **执行 js 脚本，获取应用生命周期`bootstrap, mount, unmount, update`** 
+
+      - 返回 parcelConfig，`bootstrap, mount, unmount` 是传递给 `single-spa` 进行执行的生命周期函数
+
+        ```js
+          parcelConfig = {
+            name: 'xxx',
+            bootstrap,
+            mount: [
+              // 一个个的 promise 函数，会从上至下以此执行
+              // 性能度量
+              async () => {
+                // 单例模式需要等微应用卸载完成以后才能执行挂载任务，promise 会在微应用卸载完以后 resolve
+                if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
+                  return prevAppUnmountedDeferred.promise;
+                }
+                return undefined;
+              },
+              mountSandbox, // 创建沙箱的时候返回的 开启沙箱方法
+              beforeMount, // 链式(execHooksChain)执行全局hooks beforeMount
+              async props => mount({ ...props, container: containerGetter(), setGlobalState, onGlobalStateChange }), // 向微应用的 mount 生命周期函数传递参数，比如微应用中使用的 props.onGlobalStateChange 方法
+              // 应用 mount 完成后结束 loading
+              afterMount, // 链式(execHooksChain)执行全局hooks afterMount
+              async () => {
+                // 微应用挂载完成以后初始化这个 promise，并且在微应用卸载以后 resolve 这个 promise
+                if (await validateSingularMode(singular, app)) {
+                  prevAppUnmountedDeferred = new Deferred<void>();
+                }
+              },
+              // ...
+            ],
+            unmount: [
+              beforeUnmount, // 链式(execHooksChain)执行全局hooks beforeUnmount
+              async props => unmount({ ...props, container: containerGetter() }), // unmount
+              unmountSandbox, // 关闭沙箱
+              // 显示loading，移除应用全局监听，置空element
+              async () => {
+              // 微应用卸载以后 resolve 这个 promise，框架就可以进行后续的工作，比如加载或者挂载其它微应用
+                if ((await validateSingularMode(singular, app)) && prevAppUnmountedDeferred) {
+                  prevAppUnmountedDeferred.resolve();
+                }
+              },
+            ]
+          }
+        ```
     
   - 6、给微应用注册通信方法并返回通信方法，然后会将通信方法通过 props 注入到微应用
 
@@ -229,6 +294,10 @@ scripts.forEach(code => {
 
 ## 5. 预加载
 
+### 时机
+
+`single-spa` 在`第一个应用挂载完毕后`会触发一个 全局事件 `single-spa:first-mount`， qiankun 通过监听该事件，做预加载相关事项
+
 
 
 ## 6. 通讯
@@ -328,7 +397,10 @@ scripts.forEach(code => {
 
 ### 6. 资源加载
 
-​	动态配置资源发布路径`publicPath`,否则主应用在请求子应用相对路径的资源(如：/src/main.js)就会请求到主应用下的资源
+问题：主应用在请求子应用相对路径的资源(如：/src/main.js)，会请求到主应用下的资源
+
+解决方案：webpack项目会在`运行时` 生成 `__webpack_public_path__` 作为资源基础路径，所以我们在运行时，主应用把 `__INJECTED_PUBLIC_PATH_BY_QIANKUN__` 挂到全局，子应用获取并修改该变量即可
+
 ```js
   if (window.__POWERED_BY_QIANKUN__) {
     __webpack_public_path__ = window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__;

@@ -114,10 +114,6 @@ function getAppChanges() {
   }
 }
 
-export const getMountedApps = () => {
-  return apps.filter((app: Application) => app.status === AppStatus.MOUNTED)
-}
-
 // 改写浏览器的前进后退等事件，主要是在每次路由变更时重新 加载应用
 const originalPushState = window.history.pushState
 const originalReplaceState = window.history.replaceState
@@ -138,3 +134,9 @@ const overwriteEventsAndHistory = () => {
   }
 }
 overwriteEventsAndHistory()
+
+
+
+export const getMountedApps = () => {
+  return apps.filter((app: Application) => app.status === AppStatus.MOUNTED)
+}
