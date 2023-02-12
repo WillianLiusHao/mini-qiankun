@@ -28,9 +28,7 @@ export const registerMicroApps = (apps: Array<Application>, lifeCycles?: any) =>
       app: async () => {
         await loadApp(app)
         return {
-          bootstrap: (opts: any) => { console.log('bootstarp', opts) },
-          // mount: mergeMountFn,
-          // unmount: mergeUnmountFn
+          bootstrap: (opts: any) => bootstrapApp(app, opts),
           mount: (opts: any) => mountApp(app, opts),
           unmount: (opts: any) => unmountApp(app, opts)
         }
