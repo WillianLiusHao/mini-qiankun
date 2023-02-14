@@ -4,13 +4,13 @@ import { documentFnRewrite, documentFnReset } from './documentFnRewrite'
 
 
 export class proxySandbox {
-  app: Application
   sandboxRunning: Boolean
   fackWindowKey: (symbol | string)[]
   proxyWindow: any
   snapShot: any
-  constructor(app: Application) {
-    this.app = app
+  appContainer: HTMLElement
+  constructor(container: HTMLElement) {
+    this.appContainer = container
     this.sandboxRunning = false
     this.fackWindowKey = []
     this.proxyWindow = new Proxy({}, {
@@ -36,7 +36,7 @@ export class proxySandbox {
     this.sandboxRunning = true
     // 元素作用域隔离！！
     // 当子应用中使用 document body 等顶层选择器时，默认会选择到主应用的，应当下降到子应用上
-    documentFnRewrite(this.app)
+    documentFnRewrite(this.appContainer)
   }
   inActive() {
     this.sandboxRunning = false

@@ -25,19 +25,21 @@ export const start = async () => {
 
 // 路由切换，重新加载
 const reload = async () => {
-  console.log('执行reload，重新获取应用状态', apps)
   const { toLoadApp, toMountApp, toUnMountApp } = getAppChanges()
   
   // 卸载该卸载的(上次的应用)
-  await Promise.all(toUnMountApp.map(unmountApp))
+  // await Promise.all(toUnMountApp.map(unmountApp))
+  await toUnMountApp.map(unmountApp)
 
   // 框架未启动时 加载应用
-  await Promise.all( toLoadApp.map(loadApp))
+  // await Promise.all( toLoadApp.map(loadApp))
+  await toLoadApp.map(loadApp)
 
   // 挂载
   // 1.已加载 => 初始化+首次挂载
   // 2.卸载的 => 重挂载
-  await Promise.all( toMountApp.map(bootStrapAndMountApp))
+  // await Promise.all( toMountApp.map(bootStrapAndMountApp))
+  await toMountApp.map(bootStrapAndMountApp)
 }
 
 async function loadApp<T extends Application>(app: T) {
@@ -45,6 +47,7 @@ async function loadApp<T extends Application>(app: T) {
   const res = await app.app()
   // 将子应用导出的生命周期函数拓展到 app 对象上
   app.bootstrap = res.bootstrap
+  // app.mount = flattenFnArray(res.bootstrap)
   app.mount = res.mount
   app.unmount = res.unmount
   app.status = AppStatus.LOADED
@@ -58,19 +61,31 @@ async function loadApp<T extends Application>(app: T) {
 const bootStrapAndMountApp = async (app: Application) => {
   // 初始化
   app.status = AppStatus.BEFORE_BOOTSTRAP
-  app.bootstrap && await app.bootstrap(app.customProps)
+  if(app.bootstrap) {
+    app.bootstrap.forEach(fn => {
+      fn(app.customProps)
+    });
+  }
   app.status = AppStatus.BOOTSTRAPED
 
   // 挂载
   app.status = AppStatus.BEFORE_MOUNT
-  app.mount && await app.mount(app.customProps)
+  if(app.mount) {
+    app.mount.forEach(fn => {
+      fn(app.customProps)
+    });
+  }
   app.status = AppStatus.MOUNTED
 }
 
 const unmountApp = async (app: Application) => {
   // 卸载
   app.status = AppStatus.BEFORE_UNMOUNT
-  app.unmount && await app.unmount(app.customProps)
+  if(app.unmount) {
+    app.unmount.forEach(fn => {
+      fn(app.customProps)
+    });
+  }
   app.status = AppStatus.UNMOUNTED
   return app
 }
@@ -134,8 +149,6 @@ const overwriteEventsAndHistory = () => {
   }
 }
 overwriteEventsAndHistory()
-
-
 
 export const getMountedApps = () => {
   return apps.filter((app: Application) => app.status === AppStatus.MOUNTED)

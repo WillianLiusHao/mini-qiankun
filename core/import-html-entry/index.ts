@@ -2,50 +2,52 @@ import { Application } from '../qiankun/types'
 
 const originalWindow: Window & any = window
 
-export const importEntry = (entry: string) => {
-
-}
-
 // 通过 app 入口文件解析 html 并 加载 css 和 js
-export const parseHTMLandLoadSources = async (app: Application) => {
-  return new Promise<void>(async (resolve, reject) => {
+export const importEntry = async (app: Application) => {
+  return new Promise<{template: string, assetPublicPath: string, execScripts?: any}>(async (resolve, reject) => {
     // 1. 发请求，获取 html 内容
-    let html = ''
+    let template = ''
     try {
-      html = await loadSourceText(app.entry)
+      template = await loadSourceText(app.entry)
     } catch (error) {
-      reject('parse html error')      
+      reject('parse template error')      
     }
     
-    // 2.DOMParser 解析 html，处理成 dom 对象（不用创建真实dom）
+    // 2.DOMParser 解析 template，处理成 dom 对象（不用创建真实dom）
     const domparser = new DOMParser()
-    const doc = domparser.parseFromString(html, 'text/html')
+    const doc = domparser.parseFromString(template, 'text/html')
 
     // parseCssAndScript 解析 css 和 js 资源
     const { styles, scripts } = parseCssAndScript(doc, app)
-    app.pageBody = html
-    
-    // app.pageBody = doc.body.innerHTML
-
-
-    // 加载 资源
     console.log(scripts)
+    // 加载 资源
     let isStylesDone = false, isScriptsDone = false
     Promise.all(getExternalStyleSheets(app, styles))
       .then((res: any) => {
         isStylesDone = true
         app.styles = res
-        if(isStylesDone && isScriptsDone) { resolve() }
+        if(isStylesDone && isScriptsDone) {
+          resolve({
+            template,
+            assetPublicPath: app.entry,
+            execScripts
+          })
+        }
       })
       .catch((err: any) => reject(err))
     Promise.all(getExternalScript(app, scripts))
       .then((res: any) => {
         isScriptsDone = true
         app.scripts = res
-        if(isStylesDone && isScriptsDone) { resolve() }
+        if(isStylesDone && isScriptsDone) {
+          resolve({
+            template,
+            assetPublicPath: app.entry,
+            execScripts
+          })
+        }
       })
       .catch((err: any) => reject(err))
-    
   })
 }
 export function loadSourceText(url: string) {
@@ -139,7 +141,7 @@ export const getExternalScript = (app: Application, scripts: any) => {
 }
 
 
-export function executeScripts(scripts: string[], app: Application) {
+function execScripts(scripts: string[], app: Application) {
   try {
     /**
      * 基于umd 模式，构造 commonjs 环境，用于接收子应用暴露的生命周期钩子

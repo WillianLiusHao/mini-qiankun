@@ -1,7 +1,5 @@
 import { Application } from '../types'
 import { registerApplication } from '../../single-spa'
-
-import { bootstrapApp, unmountApp, mountApp } from '../lifecycle'
 import { loadApp } from '../loader'
 
 export const appMaps = new Map()
@@ -26,11 +24,12 @@ export const registerMicroApps = (apps: Array<Application>, lifeCycles?: any) =>
     registerApplication({
       name: app.name,
       app: async () => {
-        await loadApp(app)
+        const { bootstrap, mount, unmount } = await loadApp(app)
+        console.log( bootstrap, mount, unmount)
         return {
-          bootstrap: (opts: any) => bootstrapApp(app, opts),
-          mount: (opts: any) => mountApp(app, opts),
-          unmount: (opts: any) => unmountApp(app, opts)
+          bootstrap: [async () => {console.log('beforeBootstrap')}, ...bootstrap, async () => {console.log('afterBootstrap')}],
+          mount: [...mount],
+          unmount: [...unmount]
         }
       },
       activeWhen: app.activeRule

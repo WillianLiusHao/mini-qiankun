@@ -12,9 +12,9 @@ export type Application = {
   customProps?: Object
 
   status?: number | string,
-  bootstrap?: (param: any) => void,
-  mount?: (param: any) => void,
-  unmount?: (param: any) => void,
+  bootstrap?: Array<(param: any) => void>
+  mount?: Array<(param: any) => void>,
+  unmount?:Array<(param: any) => void>
 }
 
 export type MicroWindow = Window & any

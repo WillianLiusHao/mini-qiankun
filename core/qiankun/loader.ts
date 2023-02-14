@@ -1,9 +1,11 @@
 import { Application } from "./types"
 import { proxySandbox } from './sandbox/proxySandbox'
-import { parseHTMLandLoadSources, addStyles, executeScripts } from '../import-html-entry'
+import { importEntry, addStyles } from '../import-html-entry'
 import { originalWindow } from './utils/originalEnv'
 import { deepClone } from './utils/deepClone'
 import { frameworkConfiguration } from './apis'
+
+import { bootstrapApp, unmountApp, mountApp } from './lifecycle'
 
 
 /**
@@ -23,44 +25,46 @@ import { frameworkConfiguration } from './apis'
 
 export const loadApp = async (app: Application) => {
   console.log(`%c↓↓↓↓↓↓↓↓↓↓ ${app.name} loadApp start ↓↓↓↓↓↓↓↓↓↓`, 'color: red')
+
+  // --------------- 1.html entry ---------------
+
   /**
    * 获取微应用的入口 html 内容和脚本执行器
    * template 是 link 替换为 style 后的 template
    * execScript 是 让 JS 代码(scripts)在指定 上下文 中运行
    * assetPublicPath 是静态资源地址
   */
-  // const { template, execScripts, assetPublicPath } = await importEntry(app.entry)
-
-
-  // --------------- 1.html entry ---------------
   console.log('1. importEntry处理资源', )
-  await parseHTMLandLoadSources(app)
+  const { template, execScripts, assetPublicPath } = await importEntry(app)
 
   // --------------- 2.样式隔离 ------------------
+  // let element = document.createElement('div')
+  // element.id = `__qiankun_microapp_wrapper_for_${app.name}`
+  // element['data-name'] = app.name
+  // element.innerHTML = template
 
-
-
+  
   // --------------- 3.渲染微应用 ----------------
   console.log('3. 挂载 app.container:')
-  if(typeof app.container === 'string') {
-    const appContainer = document.querySelector(app.container) as HTMLElement
 
-    appContainer.innerHTML = app.pageBody as string
-    app.container = appContainer
-  } else {
-    (app.container as HTMLElement).innerHTML = app.pageBody as string
-  }
+  // const render = getRender(app.container)
+  // render(element)
+  // app.container = document.querySelector(`#${element.id}`) as HTMLElement
 
+
+  app.container = document.querySelector(app.container as string) as HTMLElement
+  app.container.innerHTML = template
+  
   // --------------- 4.运行时沙箱 ----------------
   //3. 沙箱代理，执行 styles 和 scripts
   console.log('4. 沙箱代理，执行style和script:')
   if(frameworkConfiguration.sandbox) {
-    app.sandbox = new proxySandbox(app)
+    app.sandbox = new proxySandbox(app.container)
     app.sandbox.active()
   }
 
   // addStyles(app.styles as string[])
-  executeScripts(app.scripts as string[], app)
+  execScripts(app.scripts as string[], app)
   // 首次加载完资源后，生成沙箱快照，后续重新加载该应用的时候可复原
   if(frameworkConfiguration.sandbox) {
     app.sandbox.snapShot = deepClone(app.sandbox?.proxyWindow) 
@@ -68,9 +72,18 @@ export const loadApp = async (app: Application) => {
     
   // --------------- 5.合并处理生命周期 ----------------
   const { mount, unmount } = await getMicroAppLifeFn(app)
-
   app.mount = mount
   app.unmount = unmount
+
+  return {
+    bootstrap: [bootstrapApp],
+    mount: [
+      async (opts) => mountApp(app, opts)
+    ],
+    unmount: [
+      async (opts) => unmountApp(app, opts)
+    ]
+  }
 }
 
 
@@ -81,4 +94,14 @@ async function getMicroAppLifeFn(app: Application) {
     return originalWindow.module.exports
   }
   throw Error('The micro app must export the lifecycle("bootstrap" "mount" "unmount") fn')
+}
+
+
+function getRender(container) {
+  const render = (el) => {
+    const appContainer = typeof container === 'string' ? document.querySelector(container) as HTMLElement : container
+    appContainer.innerHTML = '' // 挂载前先清空
+    appContainer.appendChild(el)
+  }
+  return render
 }
