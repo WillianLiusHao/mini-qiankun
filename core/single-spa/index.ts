@@ -62,8 +62,8 @@ const bootStrapAndMountApp = async (app: Application) => {
   // 初始化
   app.status = AppStatus.BEFORE_BOOTSTRAP
   if(app.bootstrap) {
-    app.bootstrap.forEach(fn => {
-      fn(app.customProps)
+    app.bootstrap.forEach(async fn => {
+      await fn(app.customProps)
     });
   }
   app.status = AppStatus.BOOTSTRAPED
@@ -71,8 +71,8 @@ const bootStrapAndMountApp = async (app: Application) => {
   // 挂载
   app.status = AppStatus.BEFORE_MOUNT
   if(app.mount) {
-    app.mount.forEach(fn => {
-      fn(app.customProps)
+    app.mount.forEach(async fn => {
+      await fn(app.customProps)
     });
   }
   app.status = AppStatus.MOUNTED
@@ -82,8 +82,8 @@ const unmountApp = async (app: Application) => {
   // 卸载
   app.status = AppStatus.BEFORE_UNMOUNT
   if(app.unmount) {
-    app.unmount.forEach(fn => {
-      fn(app.customProps)
+    app.unmount.forEach(async fn => {
+      await fn(app.customProps)
     });
   }
   app.status = AppStatus.UNMOUNTED

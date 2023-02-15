@@ -1,4 +1,3 @@
-import { Application } from "../types"
 import { originalWindow } from "../utils/originalEnv"
 import { documentFnRewrite, documentFnReset } from './documentFnRewrite'
 
@@ -15,16 +14,16 @@ export class proxySandbox {
     this.fackWindowKey = []
     this.proxyWindow = new Proxy({}, {
       set: (target: any, key, value) => {
-        if(this.sandboxRunning) {
+        // if(this.sandboxRunning) {
           // 如果设置的键是代理对象自有的，在set前会经过get函数，所以此时的target 为代理对象
           // 反之为 window
           target[key] = value
           this.fackWindowKey.push(key)
           return true
-        } else {
-          console.error('沙箱没有运行， 设置无效!!!')
-          return false
-        }
+        // } else {
+        //   console.error('沙箱没有运行， 设置无效!!!')
+        //   return false
+        // }
       },
       get: (target, key) => {
         // 当代理对象有该属性时候，返回代理对象
@@ -52,10 +51,24 @@ export class proxySandbox {
   }
 }
 
-// 开启了沙箱且挂载过的应用，重启沙箱，恢复快照
-export const sandboxRestart = (app: Application) => {
-  if(app.sandbox) {
-    app.sandbox.active()
-    app.sandbox.proxyWindow = app.sandbox?.snapShot
+
+export const createSandbox = (container: HTMLElement) => {
+  let sandbox
+  if(window.Proxy) {
+    sandbox = new proxySandbox(container)
+  }
+
+  return {
+    sandbox,
+    mount: async () => {
+      sandbox.active()
+      // 开启了沙箱且挂载过的应用，重启沙箱，恢复快照
+      if(sandbox?.snapShot) {
+        sandbox.proxyWindow = sandbox?.snapShot
+      }
+    },
+    unMount: async () => {
+      sandbox.inActive()
+    }
   }
 }

@@ -14,6 +14,7 @@ export type Application = {
   loadedURLs?: Array<string>,
   scripts?: Array<string>,
   styles?: Array<string>,
+  props?: Object,
   sandbox?: any,
   /**
      * app 加载方法
