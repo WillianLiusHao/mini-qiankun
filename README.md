@@ -1,30 +1,32 @@
 # mini-qiankun
 
 
-## start
+## Guide
 
 ```js
 import { registerApplication, start } from 'mini-qiankun'
 
-registerApplication(
+registerMicroApps(
   [
     {
-      name: 'vue3App',
-      entry: '/child/vue3-app',
+      name: 'vue2App',
+      entry: 'http://localhost:8081',
       container: '#container',
-      activeRule: '/vue3-app',
+      activeRule: '/vue2-cli-app',
+      props: {
+        msg: '主应用传递的数据,你是vue2App'
+      }
     },
     {
-      name: 'vue2App',
-      entry: '/child/vue2-app',
+      name: 'vue3App',
+      entry: 'http://localhost:8082',
       container: '#container',
-      activeRule: '/vue2-app'
+      activeRule: () => location.pathname.indexOf('/vue3-cli-app') === 0,
+      props: {
+        msg: '主应用传递的数据,你是vue3App'
+      }
     }
-  ],
-  {
-    beforeLoad: (app) => { console.log('before load', app.name) },
-    beforeMount: (app) => { console.log('before mount', app.name) }
-  }
+  ]
 )
 
 start()
