@@ -12,34 +12,21 @@ registerMicroApps(
       entry: 'http://localhost:8081',
       container: '#container',
       activeRule: '/vue2-cli-app',
+      props: {
+        msg: '主应用传递的数据,你是vue2App'
+      }
     },
     {
       name: 'vue3App',
       entry: 'http://localhost:8082',
       container: '#container',
-      activeRule: () => location.pathname.indexOf('/vue3-cli-app') === 0
+      activeRule: () => location.pathname.indexOf('/vue3-cli-app') === 0,
+      props: {
+        msg: '主应用传递的数据,你是vue3App'
+      }
     }
   ]
 )
 
-// registerApplication(
-//   {
-//     name: 'vue2App',
-//     app: async () => {
-//       return {
-//         bootstrap: async () => {
-//           console.log('single-spa bootstrap')
-//         },
-//         mount: async () => {
-//           console.log('single-spa mount')
-//         },
-//         unmount: async () => {
-//           console.log('single-spa unmount')
-//         }
-//       }
-//     },
-//     activeWhen: () => location.pathname.indexOf('/vue2-cli-app') === 0,
-//   },
-// )
 start()
 createApp(App).mount('#app')

@@ -30,6 +30,7 @@ export async function bootstrap() {
   console.log('[vue2] vue2 app bootstraped');
 }
 export async function mount(props) {
+  console.log('子应用获取到数据', props.props)
   console.log(window.a)
   window.a = 'vue2'
   render(props);
