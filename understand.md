@@ -301,9 +301,10 @@ scripts.forEach(code => {
 `qiankun` 通过监听该事件，做预加载相关事项 `prefetchAfterFirstMounted`
 
 具体为
-    1. 从所有未加载的应用中去掉加载过的，得到预加载列表
-    2. 遍历并依次调用 `prefetch`
-    3. `prefetch` 通过 `requestIdleCallback` 浏览器空闲时，通过 `importEntry` 加载相关的静态资源
+
+1. 从所有未加载的应用中去掉加载过的，得到预加载列表     
+2. 遍历并依次调用 `prefetch`   
+3. `prefetch` 通过 `requestIdleCallback` 浏览器空闲时，通过 `importEntry` 加载相关的静态资源    
 
 ```js
     /**
