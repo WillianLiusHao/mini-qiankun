@@ -1,5 +1,18 @@
 import { type Application, Register } from "./types"
 
+/**
+ * 整个 single-spa 主要做了如下几个事情
+ * 1. 全局定义子应用的所有状态，初始化子应用状态为 待加载
+ * 2. 根据路由的状态和应用当前状态 可将子应用分为如下几类
+ *    - 待加载： 路由匹配 & 状态为加载前
+ *    - 待挂载： 路由匹配 & （状态为加载前 | 状态为已卸载)
+ *    - 待卸载： 路由不匹配 & 状态为挂载
+ * 3. 改写路由的 popstate/pushState 等方法
+ * 4. 每次路由切换，路由事件监听到变化，调用reload，把不同类别的子应用分别执行不同的方法
+ *    - 其中，状态为 BEFORE_LOAD 的应用被归为 toLoadApp 类型,会执行 loadApp方法，获取外部传入的 app 不同生命周期的 事件列表
+ *    - 其中，第二点中归为待挂载类型的子应用，会执行 bootStrapAndMountApp 方法，依次执行 bootstrap 和 mount 生命周期时间列表
+ */
+
 enum AppStatus {
   BEFORE_LOAD, // 待加载
   LOADED, // 已加载
@@ -43,7 +56,7 @@ const reload = async () => {
 }
 
 async function loadApp<T extends Application>(app: T) {
-  // 加载 app（这一步，可以让用户拓展方法，qiankun正是如此）
+  // 加载 app（这一步，可以让用户拓展方法，qiankun 正是通过此处二开拓展）
   const res = await app.app()
   // 将子应用导出的生命周期函数拓展到 app 对象上
   app.bootstrap = res.bootstrap
@@ -62,6 +75,7 @@ const bootStrapAndMountApp = async (app: Application) => {
   // 初始化
   app.status = AppStatus.BEFORE_BOOTSTRAP
   if(app.bootstrap) {
+    // 每个生命周期都是一个 事件队列，取出每一项依次执行
     app.bootstrap.forEach(async fn => {
       await fn(app.customProps)
     });

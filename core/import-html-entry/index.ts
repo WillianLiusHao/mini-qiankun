@@ -111,6 +111,7 @@ export const getExternalStyleSheets = (app: Application, styles: any) => {
   }).filter(Boolean)
 }
 const head = document.head
+
 export function addStyles(styles: string[] | HTMLStyleElement[]) {
   styles.forEach(item => {
     if (typeof item === 'string') {

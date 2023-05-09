@@ -43,7 +43,7 @@ export const loadApp = async (app: Application) => {
 
   // --------------- 3.渲染微应用 ----------------
   console.log('3. 挂载 app.container:')
-  const render = getRender(app.container)
+  const render = getRender(app.container) // 根据容器生产一个渲染函数，函数入参 element 是 html 内容，render 会把 element 加入到容器中
   render(element)
 
   app.container = document.querySelector(app.container as string) as HTMLElement

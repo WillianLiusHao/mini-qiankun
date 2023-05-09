@@ -30,6 +30,8 @@ export const registerMicroApps = (apps: Array<Application>, lifeCycles?: any) =>
     registerApplication({
       name: app.name,
       app: async () => {
+        // ！！！qiankun 主要就是靠这一步进行二开
+        // registerApplication 的第二个参数 app 
         const { bootstrap, mount, unmount } = await loadApp(app)
         return {
           bootstrap: bootstrap,
