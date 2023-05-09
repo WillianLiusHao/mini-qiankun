@@ -296,8 +296,57 @@ scripts.forEach(code => {
 
 ### 时机
 
-`single-spa` 在`第一个应用挂载完毕后`会触发一个 全局事件 `single-spa:first-mount`， qiankun 通过监听该事件，做预加载相关事项
+`single-spa` 在`第一个应用挂载完毕后`会触发一个 全局事件 `single-spa:first-mount`
 
+`qiankun` 通过监听该事件，做预加载相关事项 `prefetchAfterFirstMounted`
+
+具体为
+
+1. 从所有未加载的应用中去掉加载过的，得到预加载列表     
+2. 遍历并依次调用 `prefetch`   
+3. `prefetch` 通过 `requestIdleCallback` 浏览器空闲时，通过 `importEntry` 加载相关的静态资源    
+
+```js
+    /**
+     * 在第一个微应用挂载之后开始加载 apps 中指定的微应用的静态资源
+     * 通过监听 single-spa 提供的 single-spa:first-mount 事件来实现，该事件在第一个微应用挂载以后会被触发
+     * @param apps 需要被预加载静态资源的微应用列表，[{ name, entry }, ...]
+     * @param opts = { fetch , getPublicPath, getTemplate }
+     */
+    function prefetchAfterFirstMounted(apps: AppMetadata[], opts?: ImportEntryOpts): void {
+      // 监听 single-spa:first-mount 事件
+      window.addEventListener('single-spa:first-mount', function listener() {
+        // 已挂载的微应用
+        const mountedApps = getMountedApps();
+        // 从预加载的微应用列表中过滤出未挂载的微应用
+        const notMountedApps = apps.filter(app => mountedApps.indexOf(app.name) === -1);
+        
+        // 循环加载微应用的静态资源
+        notMountedApps.forEach(({ entry }) => prefetch(entry, opts));
+
+        // 移除 single-spa:first-mount 事件
+        window.removeEventListener('single-spa:first-mount', listener);
+      });
+    }
+    
+    function prefetch(entry: Entry, opts?: ImportEntryOpts): void {
+      // 弱网环境下不执行预加载
+      if (!navigator.onLine || isSlowNetwork) {
+        // Don't prefetch if in a slow network or offline
+        return;
+      }
+
+      // 通过时间切片的方式去加载静态资源，在浏览器空闲时去执行回调函数，避免浏览器卡顿
+      requestIdleCallback(async () => {
+        // 得到加载静态资源的函数
+        const { getExternalScripts, getExternalStyleSheets } = await importEntry(entry, opts);
+        // 样式
+        requestIdleCallback(getExternalStyleSheets);
+        // js 脚本
+        requestIdleCallback(getExternalScripts);
+      });
+    }
+```
 
 
 ## 6. 通讯
